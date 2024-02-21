@@ -11,6 +11,7 @@ import {
   interruptCurrrentCycleAction,
   markCurrentCycleAsFinishedAction,
 } from "../reducers/cycles/actions";
+import { differenceInSeconds } from "date-fns";
 
 interface CreateCycleData {
   task: string;
@@ -43,7 +44,7 @@ export default function CyclesContextProvider({
       cycles: [],
       activeCycleId: null,
     },
-    () => {
+    (initialState) => {
       const storedStateAsJson = localStorage.getItem(
         "@work-timer:cycles-state"
       );
@@ -51,19 +52,27 @@ export default function CyclesContextProvider({
       if (storedStateAsJson) {
         return JSON.parse(storedStateAsJson);
       }
+
+      return initialState;
     }
   );
 
   const { cycles, activeCycleId } = cyclesState;
-  const [amountSecondsPassed, setAmountSecondsPassed] = useState(0);
+  const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
+
+  const [amountSecondsPassed, setAmountSecondsPassed] = useState(() => {
+    if (activeCycle) {
+      return differenceInSeconds(new Date(), new Date(activeCycle.startDate));
+    }
+
+    return 0;
+  });
 
   useEffect(() => {
     const stateJSON = JSON.stringify(cyclesState);
 
     localStorage.setItem("@work-timer:cycles-state", stateJSON);
   }, [cyclesState]);
-
-  const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
 
   function setSecondsPassed(seconds: number) {
     setAmountSecondsPassed(seconds);
